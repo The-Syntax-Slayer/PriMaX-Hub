@@ -38,7 +38,7 @@ import TimeAnalytics from './pages/app/TimeAnalytics';
 import RiskRadar from './pages/app/RiskRadar';
 
 import './index.css';
-import './app.css';
+import './App.css';
 
 export default function App() {
   return (
