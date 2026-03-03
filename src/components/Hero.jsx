@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { FiArrowRight, FiZap, FiTrendingUp, FiAward, FiTarget, FiActivity, FiBarChart2 } from 'react-icons/fi';
 import ParticleCanvas from './ParticleCanvas';
@@ -6,21 +6,34 @@ import ParticleCanvas from './ParticleCanvas';
 const statRings = [
     { label: 'Productivity Boost', value: '+340%', color: '#00e5ff' },
     { label: 'Goals Completed', value: '10M+', color: '#7c3aed' },
-    { label: 'User Rating', value: '4.9\u2605', color: '#fbbf24' },
+    { label: 'User Rating', value: '4.9★', color: '#fbbf24' },
 ];
 
 const previewModules = [
     { icon: <FiZap size={14} />, label: 'Productivity', value: '94%', color: '#00e5ff', bar: 94 },
     { icon: <FiTrendingUp size={14} />, label: 'Finance', value: '₹82,400', color: '#10b981', bar: 72 },
     { icon: <FiActivity size={14} />, label: 'Fitness', value: '18d streak', color: '#e879f9', bar: 86 },
-    { icon: <FiBarChart2 size={14} />, label: 'Career Growth', value: '\u2191 +24pts', color: '#fbbf24', bar: 68 },
+    { icon: <FiBarChart2 size={14} />, label: 'Career Growth', value: '↑ +24pts', color: '#fbbf24', bar: 68 },
 ];
 
 export default function Hero() {
     const ref = useRef(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     const { scrollY } = useScroll();
-    const y = useTransform(scrollY, [0, 600], [0, -80]);
-    const opacity = useTransform(scrollY, [0, 400], [1, 0]);
+    const yTransform = useTransform(scrollY, [0, 600], [0, -80]);
+    const opacityTransform = useTransform(scrollY, [0, 400], [1, 0]);
+
+    // Disable transforms on mobile to keep content visible
+    const y = isMobile ? 0 : yTransform;
+    const opacity = isMobile ? 1 : opacityTransform;
 
     return (
         <section
