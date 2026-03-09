@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import JSZip from 'jszip';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiSettings, FiUser, FiBell, FiShield, FiMonitor, FiSave,
@@ -290,8 +291,7 @@ ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone;`}
 
 /* ── Appearance Tab ─────────────────────────────── */
 function AppearanceTab() {
-    const { theme, setTheme } = useTheme();
-    const [accentColor, setAccentColor] = useState(localStorage.getItem('accent') || '#7c3aed');
+    const { theme, toggleTheme, accent, updateAccent } = useTheme();
     const [saved, setSaved] = useState(false);
 
     const ACCENTS = [
@@ -304,13 +304,9 @@ function AppearanceTab() {
     ];
 
     const save = (colorObj) => {
-        const c = colorObj || ACCENTS.find(a => a.hex === accentColor);
-        localStorage.setItem('accent', c.hex);
-        localStorage.setItem('accent_rgb', c.rgb);
-        document.documentElement.style.setProperty('--accent', c.hex);
-        document.documentElement.style.setProperty('--accent-rgb', c.rgb);
-        setAccentColor(c.hex);
-        setSaved(true); setTimeout(() => setSaved(false), 2000);
+        updateAccent(colorObj.hex, colorObj.rgb);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
     };
 
     return (
@@ -325,8 +321,8 @@ function AppearanceTab() {
                         { id: 'dark', label: '🌙 Midnight', active: theme === 'dark' },
                         { id: 'light', label: '☀️ Daybreak', active: theme === 'light' }
                     ].map(t => (
-                        <button key={t.id} onClick={() => setTheme(t.id)}
-                            style={{ padding: '12px 24px', borderRadius: 12, background: t.active ? 'rgba(124,58,237,0.1)' : 'rgba(255,255,255,0.02)', border: t.active ? '1px solid #7c3aed' : '1px solid var(--app-border)', color: t.active ? 'var(--text-1)' : 'var(--text-3)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.2s' }}>
+                        <button key={t.id} onClick={() => { if (theme !== t.id) toggleTheme(); }}
+                            style={{ padding: '12px 24px', borderRadius: 12, background: t.active ? 'rgba(var(--accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)', border: t.active ? '1px solid var(--accent)' : '1px solid var(--app-border)', color: t.active ? 'var(--text-1)' : 'var(--text-3)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.2s' }}>
                             {t.label}
                         </button>
                     ))}
@@ -338,9 +334,9 @@ function AppearanceTab() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                     {ACCENTS.map(c => (
                         <button key={c.hex} onClick={() => save(c)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px', borderRadius: 12, background: accentColor === c.hex ? 'rgba(255,255,255,0.05)' : 'transparent', border: accentColor === c.hex ? `1px solid ${c.hex}` : '1px solid var(--app-border)', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left' }}>
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px', borderRadius: 12, background: accent === c.hex ? 'rgba(255,255,255,0.05)' : 'transparent', border: accent === c.hex ? `1px solid ${c.hex}` : '1px solid var(--app-border)', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left' }}>
                             <div style={{ width: 14, height: 14, borderRadius: '50%', background: c.hex, boxShadow: `0 0 10px ${c.hex}50` }} />
-                            <span style={{ fontSize: 12, fontWeight: 600, color: accentColor === c.hex ? 'var(--text-1)' : 'var(--text-3)' }}>{c.name}</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: accent === c.hex ? 'var(--text-1)' : 'var(--text-3)' }}>{c.name}</span>
                         </button>
                     ))}
                 </div>
@@ -471,43 +467,124 @@ function DataTab({ user }) {
     const [deleting, setDeleting] = useState(false);
     const [status, setStatus] = useState(null);
 
+    const convertToCSV = (data) => {
+        if (!data || !data.length) return '';
+        const headers = Object.keys(data[0]);
+        const rows = data.map(obj => headers.map(header => {
+            const val = obj[header];
+            if (val === null || val === undefined) return '';
+            const strValue = String(val).replace(/"/g, '""');
+            return `"${strValue}"`;
+        }).join(','));
+        return [headers.join(','), ...rows].join('\n');
+    };
+
     const exportData = async () => {
         setExporting(true);
-        const tables = ['tasks', 'habits', 'transactions', 'savings_goals', 'workouts', 'journal_entries', 'mood_logs', 'gratitude_entries', 'career_profiles'];
-        const exportObj = { exported_at: new Date().toISOString(), user_id: user.id };
-        for (const tbl of tables) {
-            const { data } = await supabase.from(tbl).select('*').eq('user_id', user.id);
-            exportObj[tbl] = data || [];
+        setStatus(null);
+        try {
+            const zip = new JSZip();
+            const timestamp = new Date().toISOString();
+            const tables = [
+                'tasks', 'habits', 'transactions', 'goals', 'workouts',
+                'journal_entries', 'mood_logs', 'gratitude_entries', 'resumes',
+                'learning_items', 'social_contacts', 'decisions', 'simulations', 'focus_sessions'
+            ];
+
+            const allData = {};
+            const fetchPromises = tables.map(async (tbl) => {
+                const { data, error } = await supabase.from(tbl).select('*').eq('user_id', user.id);
+                if (!error) allData[tbl] = data || [];
+                else console.error(`Failed to fetch ${tbl}:`, error);
+            });
+
+            await Promise.all(fetchPromises);
+
+            // 1. Root Metadata & JSON Backup
+            zip.file('Raw_Data_Backup.json', JSON.stringify({ exported_at: timestamp, user_id: user.id, ...allData }, null, 2));
+
+            // 2. CSV Modules (Tabular)
+            if (allData.tasks?.length) zip.file('Tasks_and_Priorities.csv', convertToCSV(allData.tasks));
+            if (allData.transactions?.length) zip.file('Financial_Records.csv', convertToCSV(allData.transactions));
+            if (allData.habits?.length) zip.file('Habits_Consistency.csv', convertToCSV(allData.habits));
+            if (allData.workouts?.length) zip.file('Fitness_and_Health.csv', convertToCSV(allData.workouts));
+            if (allData.goals?.length) zip.file('Goals_Roadmap.csv', convertToCSV(allData.goals));
+            if (allData.social_contacts?.length) zip.file('Social_Ecosystem.csv', convertToCSV(allData.social_contacts));
+            if (allData.learning_items?.length || allData.focus_sessions?.length) {
+                zip.file('Learning_Inventory.csv', convertToCSV(allData.learning_items));
+                zip.file('Focus_Session_Logs.csv', convertToCSV(allData.focus_sessions));
+            }
+            if (allData.resumes?.length) zip.file('Career_Profiles.csv', convertToCSV(allData.resumes));
+
+            // 3. Journal Content (Markdown)
+            if (allData.journal_entries?.length) {
+                let mdContent = `# PriMaX Journal Archive\n*Exported on ${new Date().toLocaleString()}*\n\n---\n\n`;
+                allData.journal_entries.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).forEach(entry => {
+                    mdContent += `## Entry Title: ${entry.title || 'Untitled'}\n`;
+                    mdContent += `**Date:** ${new Date(entry.created_at).toLocaleString()}\n\n`;
+                    mdContent += `${entry.content}\n\n`;
+                    mdContent += `---\n\n`;
+                });
+                zip.file('Journal_Legacy.md', mdContent);
+            }
+
+            // 4. Life Summary Report
+            let summary = `PRIMAX HUB - LIFE ARCHIVE SUMMARY\n`;
+            summary += `====================================\n`;
+            summary += `Export Date: ${new Date().toLocaleString()}\n`;
+            summary += `User ID: ${user.id}\n\n`;
+            summary += `CORE METRICS:\n`;
+            summary += `- Total Tasks Managed: ${allData.tasks?.length || 0}\n`;
+            summary += `- Habits Tracking: ${allData.habits?.length || 0}\n`;
+            summary += `- Financial Transactions: ${allData.transactions?.length || 0}\n`;
+            summary += `- Fitness Sessions Logged: ${allData.workouts?.length || 0}\n`;
+            summary += `- Deep Focus Time: ${allData.focus_sessions?.reduce((acc, s) => acc + (s.duration_minutes || 0), 0)} minutes\n`;
+            summary += `- Journal Preservation: ${allData.journal_entries?.length || 0} entries\n\n`;
+            summary += `Stay disciplined. Stay focused. Keep Growing.\n`;
+            zip.file('Life_Summary_Report.txt', summary);
+
+            // 5. README
+            zip.file('README.txt', `How to use this Archive:\n1. .CSV files can be opened in Excel or Google Sheets.\n2. .MD files are Markdown, best-viewed in Obsidian, VS Code, or any Text Editor.\n3. .JSON file is your technical backup for developers.\n\nThis is your data. You own it.`);
+
+            // Generate and Download
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `PriMaX-Life-Archive-${new Date().toISOString().split('T')[0]}.zip`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            setStatus({ type: 'success', msg: 'Elite ZIP Archive generated successfully!' });
+        } catch (err) {
+            console.error('Export error:', err);
+            setStatus({ type: 'error', msg: 'Export failed: ' + err.message });
+        } finally {
+            setExporting(false);
         }
-        const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `primax-export-${Date.now()}.json`; a.click();
-        URL.revokeObjectURL(url);
-        setExporting(false);
     };
 
     const deleteAllData = async () => {
         if (deleteConfirm !== 'DELETE') { setStatus({ type: 'error', msg: 'Type DELETE to confirm.' }); return; }
         setDeleting(true);
-        const tables = ['tasks', 'habits', 'transactions', 'savings_goals', 'workouts', 'journal_entries', 'mood_logs', 'gratitude_entries', 'career_profiles', 'career_milestones', 'job_applications', 'budgets', 'subscriptions'];
+        const tables = ['tasks', 'habits', 'transactions', 'goals', 'workouts', 'journal_entries', 'mood_logs', 'gratitude_entries', 'resumes', 'career_profiles', 'learning_items', 'social_contacts', 'decisions', 'simulations', 'focus_sessions'];
         for (const tbl of tables) { await supabase.from(tbl).delete().eq('user_id', user.id); }
-        setStatus({ type: 'success', msg: 'All data deleted. Your account is now empty.' });
+        setStatus({ type: 'success', msg: 'All data deleted. Your life archive is now empty.' });
         setDeleteConfirm(''); setDeleting(false);
     };
 
     return (
         <div>
             <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)', marginBottom: 4 }}>Data & Privacy</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 22 }}>Export your data or manage your account data.</p>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 22 }}>Export your data as an Elite Archive or manage retention.</p>
             {status && <StatusPill type={status.type} msg={status.msg} />}
 
             <div style={{ padding: 20, borderRadius: 14, background: 'rgba(0,245,255,0.04)', border: '1px solid rgba(0,245,255,0.15)', marginBottom: 24 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><FiDownload size={14} /> Export Your Data</h3>
-                <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16 }}>Download all your tasks, habits, transactions, workouts, journal entries and more as JSON.</p>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><FiDownload size={14} /> Elite Life Archive</h3>
+                <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16 }}>Download a professional ZIP bundle containing your complete life data in CSV, Markdown, and JSON formats.</p>
                 <button onClick={exportData} disabled={exporting}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)', color: '#00f5ff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-                    <FiDownload size={13} /> {exporting ? 'Exporting...' : 'Export All Data (JSON)'}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 10, background: 'linear-gradient(135deg, rgba(0,245,255,0.15), rgba(124,58,237,0.15))', border: '1px solid rgba(0,245,255,0.3)', color: '#00f5ff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                    <FiDownload size={13} /> {exporting ? 'Generating Archive...' : 'Export Elite ZIP Archive'}
                 </button>
             </div>
 

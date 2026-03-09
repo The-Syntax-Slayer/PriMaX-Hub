@@ -17,7 +17,11 @@ export async function callGemini(prompt, systemInstruction = '') {
     try {
         const client = getClient();
         const model = client.getGenerativeModel({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
+            generationConfig: {
+                maxOutputTokens: 2000,
+                temperature: 0.7,
+            },
             ...(systemInstruction ? { systemInstruction } : {}),
         });
         const result = await model.generateContent(prompt);

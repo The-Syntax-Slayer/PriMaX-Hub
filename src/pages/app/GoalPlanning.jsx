@@ -113,7 +113,10 @@ export default function GoalPlanning() {
     const generateAISteps = async (goal) => {
         setAiLoading(goal.id);
         try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-1.5-flash',
+                generationConfig: { maxOutputTokens: 500, temperature: 0.7 }
+            });
             const prompt = `Goal: "${goal.title}". Description: "${goal.description || 'none'}". Generate 4 actionable milestones as a numbered list. Each milestone 1 sentence. No markdown.`;
             const result = await model.generateContent(prompt);
             const text = result.response.text().trim();
@@ -128,7 +131,10 @@ export default function GoalPlanning() {
         setPredictingId(goal.id);
         try {
             const daysLeft = getDaysLeft(goal.target_date);
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-1.5-flash',
+                generationConfig: { maxOutputTokens: 1000, temperature: 0.7 }
+            });
             const prompt = `Goal: "${goal.title}". Progress: ${goal.progress}%. Days left until deadline: ${daysLeft !== null ? daysLeft : 'Unknown (no deadline set)'}. Milestones: ${goal.milestones?.length || 0}. 
             Analyze the probability of hitting this goal on time based on current progress vs days left. 
             Return ONLY a valid JSON:

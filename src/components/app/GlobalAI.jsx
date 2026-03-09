@@ -190,6 +190,31 @@ export default function GlobalAI({ isMobile }) {
                 }
             },
             {
+                name: "add_career_milestone",
+                description: "Add a new milestone to your career roadmap.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        title: { type: SchemaType.STRING, description: "Milestone title" },
+                        description: { type: SchemaType.STRING, description: "Short description" },
+                        deadline: { type: SchemaType.STRING, description: "Month YYYY" }
+                    },
+                    required: ["title"]
+                }
+            },
+            {
+                name: "update_career_profile",
+                description: "Update your target role, industry, or current position in your career profile.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        target_role: { type: SchemaType.STRING },
+                        industry: { type: SchemaType.STRING },
+                        current_position: { type: SchemaType.STRING }
+                    }
+                }
+            },
+            {
                 name: "get_data",
                 description: "Fetch all user data from a specific module. Use this to read the user's current items (e.g. read their tasks).",
                 parameters: {
@@ -253,9 +278,13 @@ Do not use markdown bolding (**) in your responses. Be concise and confirm actio
         if (!user) return null;
         const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             systemInstruction: SYSTEM_PROMPT,
-            tools: [agentTools] // Inject Tools
+            tools: [agentTools], // Inject Tools
+            generationConfig: {
+                maxOutputTokens: 2000,
+                temperature: 0.8,
+            }
         });
 
         // Fetch recent context (max 10) to keep token size manageable
@@ -418,11 +447,46 @@ Do not use markdown bolding (**) in your responses. Be concise and confirm actio
                     actionMsg = `Added to Learning: ${title.substring(0, 20)}`;
                     break;
                 }
+                case 'add_career_milestone': {
+                    const { title, description, deadline } = call.args;
+                    const { error } = await supabase.from('career_milestones').insert({
+                        user_id: user.id, title, description: description || '', deadline: deadline || '', color: '#7c3aed', status: 'upcoming'
+                    });
+                    if (error) throw error;
+                    actionResult = { success: true, message: `Career milestone '${title}' added.` };
+                    actionMsg = `Add Career Milestone: ${title}`;
+                    break;
+                }
+                case 'update_career_profile': {
+                    const { target_role, industry, current_position } = call.args;
+                    const updates = {};
+                    if (target_role) updates.target_role = target_role;
+                    if (industry) updates.industry = industry;
+                    if (current_position) updates.current_position = current_position;
+                    const { error } = await supabase.from('career_profiles').update(updates).eq('user_id', user.id);
+                    if (error) throw error;
+                    actionResult = { success: true, message: `Career profile updated.` };
+                    actionMsg = `Updated Career Profile`;
+                    break;
+                }
                 case 'get_data': {
                     const { table_name } = call.args;
                     const { data, error } = await supabase.from(table_name).select('*').eq('user_id', user.id).limit(50);
                     if (error) throw error;
-                    actionResult = { success: true, count: data.length, data: data };
+
+                    // Truncate data if it's too large to prevent token limit issues
+                    let finalData = data;
+                    if (data && data.length > 15) {
+                        finalData = data.slice(0, 15);
+                        actionResult = {
+                            success: true,
+                            count: data.length,
+                            data: finalData,
+                            note: `Showing first 15 of ${data.length} items to keep the response concise.`
+                        };
+                    } else {
+                        actionResult = { success: true, count: data.length, data: data };
+                    }
                     actionMsg = `Read data from: ${table_name}`;
                     break;
                 }

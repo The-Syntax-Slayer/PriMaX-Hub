@@ -8,6 +8,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { callGemini, SYSTEM_PROMPTS } from '../../lib/aiService';
+import { GlassCard, EliteSectionTitle, EliteStat, EliteButton } from '../../components/ui/EliteUI';
 
 const Spinner = () => (
     <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
@@ -25,11 +26,7 @@ const TABS = [
 
 const fadeUp = (d = 0) => ({ initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4, delay: d } });
 
-function Card({ children, style = {} }) {
-    return <div style={{ borderRadius: 18, background: 'var(--app-surface)', border: '1px solid var(--app-border)', padding: 22, ...style }}>{children}</div>;
-}
-
-function Score({ value, color = '#7c3aed', size = 80 }) {
+function Score({ value, color = 'var(--accent)', size = 80 }) {
     const r = size / 2 - 8;
     const circ = 2 * Math.PI * r;
     const pct = Math.min(value / 100, 1);
@@ -220,50 +217,46 @@ function OverviewTab({ stats }) {
     return (
         <div>
             {/* Master score */}
-            <Card style={{ marginBottom: 20, background: 'linear-gradient(135deg,rgba(124,58,237,0.07),rgba(0,245,255,0.03))', border: '1px solid rgba(124,58,237,0.2)' }}>
+            <GlassCard style={{ marginBottom: 20, background: 'linear-gradient(135deg, rgba(var(--accent-rgb), 0.07), rgba(0, 245, 255, 0.03))', border: '1px solid rgba(var(--accent-rgb), 0.2)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
-                    <Score value={stats.overallScore} color="#7c3aed" size={110} />
+                    <Score value={stats.overallScore} color="var(--accent)" size={110} />
                     <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Overall Life Score</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Overall Life Score</div>
                         <div style={{ fontFamily: 'Orbitron, monospace', fontSize: 32, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1 }}>{stats.overallScore}<span style={{ fontSize: 16, color: 'var(--text-3)' }}>/100</span></div>
                         <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 8 }}>
                             Based on {stats.tasks.total} tasks, {stats.habits.total} habits, {stats.fitness.count} workouts, and {stats.mental.journals} journal entries.
                         </div>
                     </div>
                 </div>
-            </Card>
+            </GlassCard>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16, marginBottom: 20 }}>
                 {domains.map((d, i) => (
                     <motion.div key={i} {...fadeUp(i * 0.06)}>
-                        <Card style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '18px 20px' }}>
+                        <GlassCard style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '18px 20px' }}>
                             <Score value={d.score} color={d.color} size={64} />
-                            <div>
+                            <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, color: d.color, fontSize: 13 }}>{d.icon}<span style={{ fontWeight: 700, color: 'var(--text-1)' }}>{d.label}</span></div>
-                                <div style={{ height: 4, width: 100, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
+                                <div style={{ height: 4, width: '100%', borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
                                     <motion.div initial={{ width: 0 }} animate={{ width: `${d.score}%` }} transition={{ duration: 1.1, delay: 0.2 }} style={{ height: '100%', borderRadius: 2, background: d.color }} />
                                 </div>
                             </div>
-                        </Card>
+                        </GlassCard>
                     </motion.div>
                 ))}
             </div>
 
-            {/* Quick stats */}
+            {/* Quick stats using EliteStat */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 12 }}>
                 {[
                     { label: 'Tasks Done', value: stats.tasks.done, icon: '✅', color: '#10b981' },
                     { label: 'Habit Streak', value: `${stats.habits.maxStreak}d`, icon: '🔥', color: '#f59e0b' },
                     { label: 'Workouts', value: stats.fitness.count, icon: '💪', color: '#ec4899' },
-                    { label: 'Journal Entries', value: stats.mental.journals, icon: '📓', color: '#7c3aed' },
+                    { label: 'Journal Entries', value: stats.mental.journals, icon: '📓', color: 'var(--accent)' },
                     { label: 'Savings Rate', value: `${stats.finance.savingsRate}%`, icon: '💰', color: '#00f5ff' },
                     { label: 'Avg Mood', value: stats.mental.avgMood ? `${stats.mental.avgMood}/5` : '–', icon: '😊', color: '#f97316' },
                 ].map((s, i) => (
-                    <div key={i} style={{ padding: '14px 16px', borderRadius: 14, background: `${s.color}0a`, border: `1px solid ${s.color}20` }}>
-                        <div style={{ fontSize: 20, marginBottom: 8 }}>{s.icon}</div>
-                        <div style={{ fontFamily: 'Orbitron, monospace', fontSize: 20, fontWeight: 900, color: s.color }}>{s.value ?? 0}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>{s.label}</div>
-                    </div>
+                    <EliteStat key={i} label={s.label} value={s.value} icon={s.icon} color={s.color} />
                 ))}
             </div>
         </div>
@@ -279,8 +272,8 @@ function TrendsTab({ stats }) {
     return (
         <div className="analytics-grid-2" style={{ gap: 18 }}>
             {/* Mood trend */}
-            <Card>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>😊 Mood Trend (Last 7 Logs)</div>
+            <GlassCard>
+                <EliteSectionTitle title="Mood Trend (Last 7 Logs)" icon="😊" />
                 {mental.moodTrend.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: 30, opacity: 0.5, fontSize: 13, color: 'var(--text-2)' }}>No mood logs yet</div>
                 ) : (
@@ -298,11 +291,11 @@ function TrendsTab({ stats }) {
                         })}
                     </div>
                 )}
-            </Card>
+            </GlassCard>
 
             {/* Top habits by streak */}
-            <Card>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>🔥 Top Habit Streaks</div>
+            <GlassCard>
+                <EliteSectionTitle title="Top Habit Streaks" icon="🔥" />
                 {habits.top.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: 30, opacity: 0.5, fontSize: 13, color: 'var(--text-2)' }}>No habits tracked yet</div>
                 ) : habits.top.map((h, i) => (
@@ -316,11 +309,11 @@ function TrendsTab({ stats }) {
                         </div>
                     </div>
                 ))}
-            </Card>
+            </GlassCard>
 
             {/* Spending breakdown */}
-            <Card>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>💸 Spending by Category</div>
+            <GlassCard>
+                <EliteSectionTitle title="Spending by Category" icon="💸" />
                 {maxCat.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: 30, opacity: 0.5, fontSize: 13, color: 'var(--text-2)' }}>No expenses recorded</div>
                 ) : maxCat.slice(0, 5).map(([cat, amt], i) => {
@@ -338,11 +331,11 @@ function TrendsTab({ stats }) {
                         </div>
                     );
                 })}
-            </Card>
+            </GlassCard>
 
             {/* Workout types */}
-            <Card>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>🏋️ Workout Types</div>
+            <GlassCard>
+                <EliteSectionTitle title="Workout Types" icon="🏋️" />
                 {maxType.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: 30, opacity: 0.5, fontSize: 13, color: 'var(--text-2)' }}>No workouts logged yet</div>
                 ) : maxType.slice(0, 5).map(([type, count], i) => {
@@ -365,7 +358,7 @@ function TrendsTab({ stats }) {
                         🏆 {fitness.totalMins} total minutes trained
                     </div>
                 )}
-            </Card>
+            </GlassCard>
         </div>
     );
 }
@@ -399,8 +392,8 @@ function AchievementsTab({ stats }) {
     return (
         <div>
             <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-                <div style={{ flex: 1, padding: '18px 22px', borderRadius: 14, background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.2)', textAlign: 'center' }}>
-                    <div style={{ fontFamily: 'Orbitron, monospace', fontSize: 32, fontWeight: 900, color: '#7c3aed' }}>{unlocked.length}</div>
+                <div style={{ flex: 1, padding: '18px 22px', borderRadius: 14, background: 'rgba(var(--accent-rgb), 0.08)', border: '1px solid rgba(var(--accent-rgb), 0.2)', textAlign: 'center' }}>
+                    <div style={{ fontFamily: 'Orbitron, monospace', fontSize: 32, fontWeight: 900, color: 'var(--accent)' }}>{unlocked.length}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>Achievements Unlocked</div>
                 </div>
                 <div style={{ flex: 1, padding: '18px 22px', borderRadius: 14, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', textAlign: 'center' }}>
@@ -499,26 +492,27 @@ ${q ? `User question: "${q}"` : 'Give a comprehensive life performance analysis.
 
     return (
         <div className="analytics-grid-2" style={{ gap: 20 }}>
-            <Card>
+            <GlassCard>
                 <div style={{ fontSize: 28, marginBottom: 12 }}>🧬</div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)', marginBottom: 6 }}>AI Life Analyst</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)', marginBottom: 6, fontFamily: 'Orbitron, monospace' }}>AI Life Analyst</h3>
                 <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 18 }}>Your AI analyst has access to all your real data. Ask anything about your performance.</p>
                 <textarea value={q} onChange={e => setQ(e.target.value)} placeholder="Optional: Ask a specific question about your analytics..." rows={3}
                     style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--app-border)', borderRadius: 12, padding: 12, color: 'var(--text-1)', fontSize: 13, resize: 'vertical', outline: 'none', fontFamily: 'Inter, sans-serif', lineHeight: 1.7, marginBottom: 14 }} />
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={generateReport} disabled={loading}
-                    style={{ padding: 12, width: '100%', borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#00f5ff)', border: 'none', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loading ? 0.6 : 1 }}>
-                    {loading ? <><Spinner /> Analysing...</> : <><FiZap /> Generate AI Report</>}
-                </motion.button>
+
+                <EliteButton onClick={generateReport} loading={loading} icon={FiZap}>
+                    Generate AI Report
+                </EliteButton>
+
                 <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 7 }}>
                     {['What is my biggest weakness right now?', 'How can I improve my productivity score?', 'Give me a 30-day improvement plan', 'Where should I focus my energy this month?'].map((p, i) => (
                         <button key={i} onClick={() => setQ(p)} style={{ textAlign: 'left', padding: '7px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-2)', fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>💡 {p}</button>
                     ))}
                 </div>
-            </Card>
-            <Card>
+            </GlassCard>
+            <GlassCard>
                 {report ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>📊 AI Analysis</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>📊 AI Analysis</div>
                         <div style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.9, whiteSpace: 'pre-wrap', overflowY: 'auto', maxHeight: 500 }}>{report}</div>
                     </motion.div>
                 ) : (
@@ -528,7 +522,7 @@ ${q ? `User question: "${q}"` : 'Give a comprehensive life performance analysis.
                         <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8 }}>Click "Generate AI Report" to get started</div>
                     </div>
                 )}
-            </Card>
+            </GlassCard>
         </div>
     );
 }

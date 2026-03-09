@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import ParticleCanvas from '../../components/ParticleCanvas';
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh';
+import { GlassCard, EliteSectionTitle, EliteStat, EliteButton } from '../../components/ui/EliteUI';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 const ACCENT = '#0ea5e9';
@@ -63,7 +64,10 @@ export default function StrategyEngine() {
         if (!user || !formData.title) return;
         setAnalyzing(true);
         try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-1.5-flash',
+                generationConfig: { maxOutputTokens: 2000, temperature: 0.7 }
+            });
             const optionsText = options.map(o => `${o.label}: Pros="${o.pros}", Cons="${o.cons}", User Score=${o.score}/10`).join('\n');
             const prompt = `You are a strategic decision advisor. Analyze this decision:
 Decision: "${formData.title}"
@@ -169,12 +173,9 @@ Return ONLY a valid JSON:
                         </div>
                         <p style={{ color: 'var(--text-2)', fontSize: 14 }}>Beast Mode • Devil's Advocate, 2nd-Order Effects & Persona Simulation</p>
                     </div>
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                        onClick={() => setShowForm(!showForm)} className="btn-primary"
-                        style={{ background: `linear-gradient(135deg, ${ACCENT}, #0284c7)`, border: 'none' }} disabled={analyzing}>
-                        {analyzing ? <FiZap className="spin" /> : <FiPlus />}
-                        {analyzing ? 'Analyzing Matrix...' : showForm ? 'Cancel' : 'New Decision'}
-                    </motion.button>
+                    <EliteButton onClick={() => setShowForm(!showForm)} icon={FiPlus} variant={showForm ? 'secondary' : 'primary'}>
+                        {showForm ? 'Cancel' : 'New Decision'}
+                    </EliteButton>
                 </header>
 
                 <div style={{ padding: '24px 32px' }}>

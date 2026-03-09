@@ -61,11 +61,34 @@ export function AuthProvider({ children }) {
         return { data, error };
     };
 
+    const resetPassword = async (email) => {
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        });
+        return { data, error };
+    };
+
+    const updatePassword = async (newPassword) => {
+        const { data, error } = await supabase.auth.updateUser({
+            password: newPassword
+        });
+        return { data, error };
+    };
+
+    const verifyResetOtp = async (email, token) => {
+        const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: 'recovery',
+        });
+        return { data, error };
+    };
+
     const signOut = async () => {
         await supabase.auth.signOut();
     };
 
-    const value = { user, profile, loading, signUp, signIn, signInWithGoogle, signOut, refreshProfile };
+    const value = { user, profile, loading, signUp, signIn, signInWithGoogle, signOut, refreshProfile, resetPassword, updatePassword, verifyResetOtp };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

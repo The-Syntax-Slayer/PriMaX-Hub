@@ -9,6 +9,8 @@ import LandingApp from './LandingApp';
 // Auth pages
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // App shell
 import AppLayout from './components/app/AppLayout';
@@ -52,6 +54,8 @@ export default function App() {
             {/* Auth routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Onboarding — protected but outside AppLayout */}
             <Route path="/app/onboarding" element={

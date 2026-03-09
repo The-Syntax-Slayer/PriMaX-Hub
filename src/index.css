@@ -7,22 +7,29 @@
   --bg-primary: #03030f;
   --bg-secondary: #06061a;
   --bg-card: rgba(10, 10, 35, 0.65);
+  --app-surface: rgba(10, 10, 35, 0.8);
+  --app-border: rgba(255, 255, 255, 0.08);
   --accent-cyan: #00e5ff;
   --accent-violet: #7c3aed;
   --accent-pink: #e879f9;
   --accent-gold: #fbbf24;
   --accent-emerald: #10b981;
-  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #00e5ff 100%);
+  --accent: #7c3aed;
+  --accent-rgb: 124, 58, 237;
+  --gradient-primary: linear-gradient(135deg, var(--accent) 0%, #00e5ff 100%);
   --gradient-hero: linear-gradient(135deg, #06061a 0%, #150524 50%, #001a20 100%);
-  --gradient-card: linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(0, 229, 255, 0.06) 100%);
-  --gradient-glow: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(0, 229, 255, 0.2));
+  --gradient-card: linear-gradient(135deg, rgba(var(--accent-rgb), 0.12) 0%, rgba(0, 229, 255, 0.06) 100%);
+  --gradient-glow: linear-gradient(135deg, rgba(var(--accent-rgb), 0.3), rgba(0, 229, 255, 0.2));
   --text-primary: #eeeeff;
   --text-secondary: #8888b8;
   --text-muted: #44446a;
+  --text-1: #ffffff;
+  --text-2: #8888b8;
+  --text-3: #44446a;
   --border-glow: rgba(0, 229, 255, 0.18);
-  --border-violet: rgba(124, 58, 237, 0.28);
+  --border-violet: rgba(var(--accent-rgb), 0.28);
   --glow-cyan: 0 0 40px rgba(0, 229, 255, 0.35), 0 0 80px rgba(0, 229, 255, 0.1);
-  --glow-violet: 0 0 40px rgba(124, 58, 237, 0.45), 0 0 80px rgba(124, 58, 237, 0.15);
+  --glow-violet: 0 0 40px rgba(var(--accent-rgb), 0.45), 0 0 80px rgba(var(--accent-rgb), 0.15);
   --glow-pink: 0 0 40px rgba(232, 121, 249, 0.35);
   --glow-subtle: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
   --border-radius: 18px;
@@ -31,6 +38,22 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-fast: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --app-surface: rgba(255, 255, 255, 0.9);
+  --app-border: rgba(0, 0, 0, 0.06);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-1: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --border-glow: rgba(var(--accent-rgb), 0.1);
+  --glow-subtle: 0 4px 20px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
 /* ========================

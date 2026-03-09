@@ -273,7 +273,7 @@ export default function Login() {
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
                                         <label className="form-label" style={{ marginBottom: 0 }}>Password</label>
-                                        <a href="#" style={{ fontSize: 12, color: '#00e5ff', textDecoration: 'none', fontWeight: 700 }}>Forgot?</a>
+                                        <Link to="/forgot-password" style={{ fontSize: 12, color: '#00e5ff', textDecoration: 'none', fontWeight: 700 }}>Forgot?</Link>
                                     </div>
                                     <div style={{ position: 'relative' }}>
                                         <FiLock size={15} style={{ position: 'absolute', left: 15, top: '50%', transform: 'translateY(-50%)', color: '#44446a' }} />
